@@ -1,4 +1,4 @@
-# 🔧 HTML Code Preview
+# HTML Code Preview
 
 Write or paste HTML, CSS, and JS code across multiple files, preview live, or open in a new tab.
 AI integration lets you generate code from natural language prompts.
@@ -6,33 +6,31 @@ AI integration lets you generate code from natural language prompts.
 ## Features
 
 ### Multi-File Project System
-- 📂 **File Explorer** sidebar — see, create, rename, and delete files
-- 🗂️ **Tab Bar** — open multiple files with quick switching
-- 🔗 **Smart Preview** — automatically inlines linked `style.css` and `script.js` files
-- 📁 **Open Folder** — load an entire folder from disk (File System Access API)
-- 📄 **Open Files** — load individual files from disk
-- 🖱️ **Drag & Drop** — drop files from your OS onto the app
-- 💾 **Auto-save** — project persists in localStorage
-- 📦 **Download as ZIP** — export the whole project at once
+- File Explorer sidebar for creating, renaming, deleting, and switching files
+- Tab bar for working across multiple open files
+- Smart preview that inlines linked local CSS and JS files
+- Open Folder, Open Files, and drag-and-drop import
+- Auto-save for project files in `localStorage`
+- ZIP export for the whole project
 
 ### AI Integration
-- 🤖 Supports OpenAI, LM Studio, Ollama, Claude, and Gemini
-- 📋 **Use in Editor** button — one click loads AI-generated code
-- Multi-turn conversation with context
+- Supports OpenAI, LM Studio, Ollama, Claude, and Gemini
+- One-click "Use in Editor" flow for generated code
+- Multi-turn conversation support
+- Cloud API keys are stored for the current browser tab only
+- Project file context is opt-in and confirmed before upload
 
 ### Core
-- ✍️ CodeMirror with syntax highlighting & auto-closing tags
-- 👁️ Live preview with console capture
-- ✨ Generate in New Tab
-- 📋 Copy / 💾 Download / 🗑️ Clear
-- 📄 Template snippets (including multi-file)
-- 🌓 Dark / Light mode
-- ⌨️ **Ctrl+Enter** → Generate in new tab, **Ctrl+S** → Save
+- CodeMirror editing with syntax highlighting
+- Live preview with console capture
+- Generate in a new tab
+- Copy, download, clear, and template shortcuts
+- Dark and light theme toggle
 
 ## Quick Start
 
-1. Open `index.html` in a browser
-2. That's it — no server needed
+1. Open `index.html` in a browser.
+2. Start editing.
 
 ## Keyboard Shortcuts
 
@@ -44,16 +42,21 @@ AI integration lets you generate code from natural language prompts.
 
 ## AI Setup
 
-1. Click **⚙️ Settings** → choose **Provider** → enter **API Key**
-2. Click **🤖** to open the AI panel
-3. Type a prompt → click **🚀 Generate Code**
-4. Click **📋 Use in Editor** to load the code
+1. Open Settings.
+2. Choose a provider and enter an API key if the provider requires one.
+3. Open the AI panel and enter a prompt.
+4. Click Generate Code, then Use in Editor if you want to load the result.
 
 ### Local Models
 
-**LM Studio:** Start the local server (default `http://localhost:1234`), no API key needed.
+**LM Studio:** Start the local server (default `http://localhost:1234`). No API key is required.
 
-**Ollama:** Start Ollama, then set `OLLAMA_ORIGINS=*` and restart. No API key needed.
+**Ollama:** Start Ollama, then set `OLLAMA_ORIGINS=*` and restart if browser access is needed. No API key is required.
 
-## File Structure
+## Security Notes
 
+- The live preview iframe runs in an isolated sandbox.
+- Cloud API keys are kept in `sessionStorage` for the current browser tab instead of persistent `localStorage`.
+- Project files are not sent to AI providers unless **Include project files as context** is enabled.
+- When context sharing is enabled, the app asks for confirmation and redacts common secret patterns before sending.
+- If you want stronger protection for cloud-provider credentials, route AI requests through a backend proxy instead of calling providers directly from the browser.

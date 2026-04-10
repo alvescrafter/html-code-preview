@@ -60,6 +60,7 @@ var toggleKeyVis    = document.getElementById('toggleKeyVis');
 
 // Drop overlay
 var dropOverlay     = document.getElementById('dropOverlay');
+var currentPreviewToken = '';
 
 // ─── EDITOR INIT ───────────────────────────────────────
 var editor;
@@ -127,10 +128,70 @@ function clearConsole() {
 }
 
 window.addEventListener('message', function(e) {
-  if (e.data && e.data.type === 'console') {
-    addConsoleLine(e.data.method, e.data.args || []);
-  }
+  var data = e.data || {};
+  if (!currentPreviewToken) return;
+  if (e.source !== previewFrame.contentWindow) return;
+  if (data.channel !== 'preview-console') return;
+  if (data.token !== currentPreviewToken) return;
+  if (typeof data.method !== 'string') return;
+  if (['log', 'warn', 'error', 'info'].indexOf(data.method) === -1) return;
+  if (data.args && !Array.isArray(data.args)) return;
+
+  addConsoleLine(data.method, data.args || []);
 });
+
+function generatePreviewToken() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function getContextCandidateFiles() {
+  var filenames = Object.keys(project.files).sort();
+  var files = [];
+  for (var i = 0; i < filenames.length; i++) {
+    var name = filenames[i];
+    var content = project.files[name].content || '';
+    if (content.trim()) {
+      files.push({ name: name, content: content });
+    }
+  }
+  return files;
+}
+
+function redactSensitiveContent(content) {
+  var redacted = content;
+  var patterns = [
+    /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g,
+    /\bsk-[A-Za-z0-9_-]{20,}\b/g,
+    /\bsk-ant-[A-Za-z0-9._-]{20,}\b/g,
+    /\bghp_[A-Za-z0-9]{20,}\b/g,
+    /\bAKIA[0-9A-Z]{16}\b/g,
+    /Bearer\s+[A-Za-z0-9._-]{20,}/gi,
+    /((?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|client[_-]?secret|secret|password|passwd|pwd)\s*[:=]\s*["']?)[^"'\r\n]+/gi
+  ];
+
+  for (var i = 0; i < patterns.length; i++) {
+    redacted = redacted.replace(patterns[i], function(match, prefix) {
+      return prefix ? prefix + '[REDACTED]' : '[REDACTED SECRET]';
+    });
+  }
+
+  return redacted;
+}
+
+function buildContextConfirmationMessage(providerLabel, files) {
+  var maxFilesToList = 8;
+  var names = [];
+  for (var i = 0; i < files.length && i < maxFilesToList; i++) {
+    names.push('- ' + files[i].name);
+  }
+  if (files.length > maxFilesToList) {
+    names.push('- ...and ' + (files.length - maxFilesToList) + ' more file(s)');
+  }
+
+  return 'Send the checked project files to ' + providerLabel + '?\n\n' +
+    names.join('\n') +
+    '\n\nPotential secrets will be redacted where detected, but you should still review what you are sharing.';
+}
 
 clearConsoleBtn.addEventListener('click', clearConsole);
 toggleConsoleBtn.addEventListener('click', function() {
@@ -610,15 +671,16 @@ var previewDebounce = null;
 
 function updatePreview() {
   saveCurrentFile();
-  var composedHTML = composePreview();
+  currentPreviewToken = '';
+  var bridgeToken = generatePreviewToken();
+  var composedHTML = composePreview(bridgeToken);
   if (!composedHTML.trim()) {
     previewFrame.srcdoc = '<html><body style="background:#fff;color:#999;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><p>No HTML file found</p></body></html>';
     return;
   }
-  var blob = new Blob([composedHTML], { type: 'text/html' });
-  var url = URL.createObjectURL(blob);
-  previewFrame.onload = function() { URL.revokeObjectURL(url); };
-  previewFrame.src = url;
+  currentPreviewToken = bridgeToken;
+  previewFrame.removeAttribute('src');
+  previewFrame.srcdoc = composedHTML;
 }
 
 function debouncedPreview() {
@@ -636,7 +698,14 @@ function generateInNewTab() {
   if (!composedHTML.trim()) { showToast('⚠️ No HTML to preview!'); return; }
   var blob = new Blob([composedHTML], { type: 'text/html' });
   var url = URL.createObjectURL(blob);
-  var newTab = window.open(url, '_blank');
+  var newTab = true;
+  var a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
   if (!newTab) { showToast('🚫 Pop-up blocked!'); }
   else { showToast('✅ Opened in new tab!'); setStatus('Opened in new tab'); }
   setTimeout(function() { URL.revokeObjectURL(url); }, 10000);
@@ -838,33 +907,25 @@ function removeLoadingIndicator() {
 // ─── Build code context from current project files ─────
 
 function buildCodeContext() {
+  var files = arguments.length > 0 ? arguments[0] : getContextCandidateFiles();
   var MAX_FILE_CHARS = 8000;
-  var hasContent = false;
-
-  for (var name in project.files) {
-    if (project.files[name].content.trim()) { hasContent = true; break; }
-  }
-
-  if (!hasContent) return '';
+  if (!files.length) return '';
 
   var lines = ['[Current project files. Active file: ' + project.activeFile + ']'];
-  var filenames = Object.keys(project.files).sort();
 
-  for (var i = 0; i < filenames.length; i++) {
-    var fname = filenames[i];
-    var content = project.files[fname].content;
-    if (content.trim()) {
-      var marker = fname === project.activeFile ? ' (active)' : '';
-      lines.push('');
-      lines.push('--- ' + fname + marker + ' ---');
-      if (content.length > MAX_FILE_CHARS) {
-        lines.push(content.substring(0, MAX_FILE_CHARS));
-        lines.push('... (truncated, ' + content.length + ' total chars)');
-      } else {
-        lines.push(content);
-      }
-      lines.push('--- end ' + fname + ' ---');
+  for (var i = 0; i < files.length; i++) {
+    var fname = files[i].name;
+    var content = redactSensitiveContent(files[i].content);
+    var marker = fname === project.activeFile ? ' (active)' : '';
+    lines.push('');
+    lines.push('--- ' + fname + marker + ' ---');
+    if (content.length > MAX_FILE_CHARS) {
+      lines.push(content.substring(0, MAX_FILE_CHARS));
+      lines.push('... (truncated, ' + content.length + ' total chars after redaction)');
+    } else {
+      lines.push(content);
     }
+    lines.push('--- end ' + fname + ' ---');
   }
 
   return lines.join('\n');
@@ -909,8 +970,17 @@ async function aiGenerate() {
   saveCurrentFile();
 
   // Build code context from current project (if enabled)
-  var includeContext = aiIncludeContext ? aiIncludeContext.checked : true;
-  var codeContext = includeContext ? buildCodeContext() : '';
+  var includeContext = aiIncludeContext ? aiIncludeContext.checked : false;
+  var contextFiles = includeContext ? getContextCandidateFiles() : [];
+  var codeContext = '';
+
+  if (includeContext && contextFiles.length > 0) {
+    if (!confirm(buildContextConfirmationMessage(provider.label, contextFiles))) {
+      showToast('Context sharing cancelled');
+      return;
+    }
+    codeContext = buildCodeContext(contextFiles);
+  }
 
   // Store clean user message in conversation history
   conversationHistory.push({ role: 'user', content: prompt });
@@ -960,8 +1030,9 @@ function handleSettingsSave() {
 
 function handleSettingsReset() {
   if (!confirm('Reset all settings to defaults?')) return;
-  localStorage.removeItem(SETTINGS_KEY);
+  resetSettings();
   populateSettingsForm();
+  if (aiIncludeContext) aiIncludeContext.checked = false;
   resetConversation();
   updateProviderBadge();
   showToast('🔄 Settings reset');
@@ -1018,6 +1089,12 @@ aiGenerateBtn.addEventListener('click', aiGenerate);
 aiPrompt.addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); aiGenerate(); }
 });
+if (aiIncludeContext) {
+  aiIncludeContext.checked = !!getSettings().includeProjectContext;
+  aiIncludeContext.addEventListener('change', function() {
+    setIncludeProjectContextPreference(this.checked);
+  });
+}
 
 settingsBtn.addEventListener('click', openSettings);
 settingsClose.addEventListener('click', closeSettings);

@@ -105,7 +105,7 @@
               <textarea id="aiPrompt" rows="3" placeholder="Describe the HTML you want... (Ctrl+Enter to send)"></textarea>
               <div class="ai-input-actions">
                 <label class="ai-context-toggle">
-                  <input type="checkbox" id="aiIncludeContext" checked>
+                  <input type="checkbox" id="aiIncludeContext">
                   <span>📎 Include project files as context</span>
                 </label>
                 <button id="aiGenerateBtn" class="ai-generate-btn">🚀 Generate Code</button>
@@ -131,7 +131,7 @@
           <span>👁️ Live Preview</span>
           <button id="refreshPreview" class="icon-btn small" title="Refresh Preview">🔄</button>
         </div>
-        <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+        <iframe id="previewFrame" sandbox="allow-scripts"></iframe>
       </div>
       <!-- Console Panel -->
       <div class="console-panel" id="consolePanel">
@@ -178,7 +178,7 @@
             <input type="password" id="apiKeyInput" placeholder="sk-... or leave blank for local" autocomplete="off">
             <button id="toggleKeyVis" class="icon-btn small" title="Show/Hide">👁️</button>
           </div>
-          <span class="form-hint" id="apiKeyHint">Required for cloud providers. Leave blank for local (LM Studio / Ollama).</span>
+          <span class="form-hint" id="apiKeyHint">Required for cloud providers. Stored for this browser tab only. Leave blank for local (LM Studio / Ollama).</span>
         </div>
         <div class="form-group">
           <label for="baseUrlInput">Base URL</label>

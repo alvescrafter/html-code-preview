@@ -191,7 +191,7 @@ function setFileContent(filename, content) {
 // ─── Smart Preview Composition ────────────────────────
 // Inlines linked CSS/JS files from the project into the HTML
 
-function composePreview() {
+function composePreview(bridgeToken) {
   // Find the main HTML file
   var htmlFile = null;
   var htmlContent = '';
@@ -235,31 +235,33 @@ function composePreview() {
     return match;
   });
 
-  // Inject console capture script
-  var consoleScript = '<script>\n' +
-    '(function(){\n' +
-    '  var orig={log:console.log,warn:console.warn,error:console.error,info:console.info};\n' +
-    '  function send(m,a){\n' +
-    '    try{parent.postMessage({type:"console",method:m,args:Array.from(a).map(function(x){\n' +
-    '      try{return typeof x==="object"?JSON.stringify(x,null,2):String(x)}catch(e){return String(x)}\n' +
-    '    })},"*")}catch(e){}\n' +
-    '  }\n' +
-    '  ["log","warn","error","info"].forEach(function(m){\n' +
-    '    console[m]=function(){orig[m].apply(console,arguments);send(m,arguments)}\n' +
-    '  });\n' +
-    '  window.addEventListener("error",function(e){\n' +
-    '    send("error",["Uncaught "+e.message+" (line "+e.lineno+")"]);\n' +
-    '  });\n' +
-    '})();\n' +
-    '<\/script>';
+  if (bridgeToken) {
+    var consoleScript = '<script>\n' +
+      '(function(){\n' +
+      '  var bridgeToken=' + JSON.stringify(String(bridgeToken)) + ';\n' +
+      '  var orig={log:console.log,warn:console.warn,error:console.error,info:console.info};\n' +
+      '  function send(m,a){\n' +
+      '    try{parent.postMessage({channel:"preview-console",token:bridgeToken,method:m,args:Array.from(a).map(function(x){\n' +
+      '      try{return typeof x==="object"?JSON.stringify(x,null,2):String(x)}catch(e){return String(x)}\n' +
+      '    })},"*")}catch(e){}\n' +
+      '  }\n' +
+      '  ["log","warn","error","info"].forEach(function(m){\n' +
+      '    console[m]=function(){orig[m].apply(console,arguments);send(m,arguments)}\n' +
+      '  });\n' +
+      '  window.addEventListener("error",function(e){\n' +
+      '    send("error",["Uncaught "+e.message+" (line "+e.lineno+")"]);\n' +
+      '  });\n' +
+      '})();\n' +
+      '<\/script>';
 
-  // Insert console script right after <head> or at the beginning
-  if (htmlContent.indexOf('<head>') !== -1) {
-    htmlContent = htmlContent.replace('<head>', '<head>' + consoleScript);
-  } else if (htmlContent.indexOf('<html') !== -1) {
-    htmlContent = htmlContent.replace(/<html[^>]*>/, function(m) { return m + consoleScript; });
-  } else {
-    htmlContent = consoleScript + htmlContent;
+    // Insert console script right after <head> or at the beginning
+    if (/<head[^>]*>/i.test(htmlContent)) {
+      htmlContent = htmlContent.replace(/<head[^>]*>/i, function(m) { return m + consoleScript; });
+    } else if (htmlContent.indexOf('<html') !== -1) {
+      htmlContent = htmlContent.replace(/<html[^>]*>/, function(m) { return m + consoleScript; });
+    } else {
+      htmlContent = consoleScript + htmlContent;
+    }
   }
 
   return htmlContent;

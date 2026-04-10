@@ -78,7 +78,7 @@ var AI_PROVIDERS = {
     label: 'Gemini',
     defaults: { baseUrl: 'https://generativelanguage.googleapis.com', model: 'gemini-2.0-flash' },
     call: async function(settings, messages) {
-      var url = rtrim(settings.baseUrl, '/') + '/v1beta/models/' + settings.model + ':generateContent?key=' + settings.apiKey;
+      var url = rtrim(settings.baseUrl, '/') + '/v1beta/models/' + settings.model + ':generateContent';
       var systemInstruction = null;
       var contents = [];
       for (var i = 0; i < messages.length; i++) {
@@ -91,7 +91,7 @@ var AI_PROVIDERS = {
       }
       var body = { contents: contents };
       if (systemInstruction) body.systemInstruction = systemInstruction;
-      var headers = { 'Content-Type': 'application/json' };
+      var headers = { 'Content-Type': 'application/json', 'x-goog-api-key': settings.apiKey };
       var resp = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(body) });
       var data = await resp.json();
       if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
