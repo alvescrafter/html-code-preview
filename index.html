@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HTML Code Preview</title>
+
+  <!-- CodeMirror 5 core CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ───── HEADER ───── -->
+  <header class="app-header">
+    <div class="header-left">
+      <span class="logo">🔧</span>
+      <h1>HTML Code Preview</h1>
+    </div>
+    <div class="header-right">
+      <button id="openFolderBtn" class="icon-btn" title="Open Folder">📁</button>
+      <button id="openFilesBtn" class="icon-btn" title="Open File(s)">📄</button>
+      <button id="aiToggle" class="icon-btn" title="Toggle AI Panel">🤖</button>
+      <button id="settingsBtn" class="icon-btn" title="API Settings">⚙️</button>
+      <button id="themeToggle" class="icon-btn" title="Toggle Light/Dark Mode">🌓</button>
+    </div>
+  </header>
+
+  <!-- ───── TOOLBAR ───── -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <label for="templateSelect">Templates:</label>
+      <select id="templateSelect">
+        <option value="">— Choose a template —</option>
+        <option value="blank">Blank HTML5</option>
+        <option value="hello">Hello World</option>
+        <option value="card">Card Component</option>
+        <option value="form">Basic Form</option>
+        <option value="flexbox">Flexbox Layout</option>
+        <option value="multi">Multi-File Starter</option>
+      </select>
+    </div>
+    <div class="toolbar-right">
+      <button id="copyBtn" class="tool-btn" title="Copy Code">📋 Copy</button>
+      <button id="downloadBtn" class="tool-btn" title="Download current file">💾 Download</button>
+      <button id="downloadZipBtn" class="tool-btn" title="Download project as ZIP">📦 ZIP</button>
+      <button id="clearBtn" class="tool-btn" title="Clear Editor">🗑️ Clear</button>
+    </div>
+  </div>
+
+  <!-- ───── MAIN AREA ───── -->
+  <main class="main-area">
+
+    <!-- File Explorer sidebar -->
+    <div class="file-explorer" id="fileExplorer">
+      <div class="file-explorer-header">
+        <span>📂 Project Files</span>
+        <button id="newFileBtn" class="icon-btn small" title="New File">➕</button>
+      </div>
+      <div class="file-list" id="fileList">
+        <!-- Files rendered by JS -->
+      </div>
+      <!-- New file inline input (hidden by default) -->
+      <div class="new-file-input" id="newFileInput" style="display:none;">
+        <input type="text" id="newFileName" placeholder="filename.html" />
+        <button id="newFileConfirm" class="icon-btn small" title="Create">✅</button>
+        <button id="newFileCancel" class="icon-btn small" title="Cancel">❌</button>
+      </div>
+      <!-- Rename inline input (hidden by default) -->
+      <div class="new-file-input" id="renameFileInput" style="display:none;">
+        <input type="text" id="renameFileName" placeholder="newname.html" />
+        <button id="renameFileConfirm" class="icon-btn small" title="Rename">✅</button>
+        <button id="renameFileCancel" class="icon-btn small" title="Cancel">❌</button>
+      </div>
+    </div>
+
+    <!-- Center column: tabs + editor + AI -->
+    <div class="center-column">
+
+      <!-- Tab bar -->
+      <div class="tab-bar" id="tabBar">
+        <!-- Tabs rendered by JS -->
+      </div>
+
+      <!-- Editor + AI area (split) -->
+      <div class="editor-ai-area">
+
+        <!-- AI Chat Panel (collapsible) -->
+        <div class="ai-panel" id="aiPanel">
+          <div class="panel-header">
+            <span>🤖 AI Assistant</span>
+            <div class="ai-provider-badge" id="providerBadge">No provider</div>
+          </div>
+          <div class="ai-body">
+            <div class="ai-messages" id="aiMessages">
+              <div class="ai-welcome">
+                <p>👋 Configure your AI provider in <strong>⚙️ Settings</strong>, then ask me to generate HTML code!</p>
+                <p class="ai-hint">Try: <em>"Create a pricing table with 3 tiers"</em></p>
+              </div>
+            </div>
+            <div class="ai-input-area">
+              <textarea id="aiPrompt" rows="3" placeholder="Describe the HTML you want... (Ctrl+Enter to send)"></textarea>
+              <div class="ai-input-actions">
+                <label class="ai-context-toggle">
+                  <input type="checkbox" id="aiIncludeContext" checked>
+                  <span>📎 Include project files as context</span>
+                </label>
+                <button id="aiGenerateBtn" class="ai-generate-btn">🚀 Generate Code</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editor Panel -->
+        <div class="panel editor-panel">
+          <div class="editor-wrapper">
+            <textarea id="codeInput"></textarea>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Preview + Console column -->
+    <div class="preview-column">
+      <div class="panel preview-panel">
+        <div class="panel-header">
+          <span>👁️ Live Preview</span>
+          <button id="refreshPreview" class="icon-btn small" title="Refresh Preview">🔄</button>
+        </div>
+        <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+      </div>
+      <!-- Console Panel -->
+      <div class="console-panel" id="consolePanel">
+        <div class="console-header">
+          <span>🖥️ Console</span>
+          <button id="clearConsoleBtn" class="icon-btn small" title="Clear Console">🗑️</button>
+          <button id="toggleConsoleBtn" class="icon-btn small" title="Toggle Console">▼</button>
+        </div>
+        <div class="console-output" id="consoleOutput">
+          <div class="console-line console-info">Ready.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ───── BOTTOM BAR ───── -->
+  <div class="bottom-bar">
+    <button id="generateBtn" class="generate-btn">✨ Generate in New Tab</button>
+    <span id="statusMsg" class="status-msg"></span>
+  </div>
+
+  <!-- ───── SETTINGS MODAL ───── -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>⚙️ API Settings</h2>
+        <button id="settingsClose" class="icon-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="providerSelect">Provider</label>
+          <select id="providerSelect">
+            <option value="openai">OpenAI (ChatGPT)</option>
+            <option value="lmstudio">LM Studio</option>
+            <option value="ollama">Ollama</option>
+            <option value="claude">Anthropic (Claude)</option>
+            <option value="gemini">Google (Gemini)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="apiKeyInput">API Key</label>
+          <div class="input-with-toggle">
+            <input type="password" id="apiKeyInput" placeholder="sk-... or leave blank for local" autocomplete="off">
+            <button id="toggleKeyVis" class="icon-btn small" title="Show/Hide">👁️</button>
+          </div>
+          <span class="form-hint" id="apiKeyHint">Required for cloud providers. Leave blank for local (LM Studio / Ollama).</span>
+        </div>
+        <div class="form-group">
+          <label for="baseUrlInput">Base URL</label>
+          <input type="text" id="baseUrlInput" placeholder="https://api.openai.com">
+          <span class="form-hint" id="baseUrlHint">Change for local servers or proxies.</span>
+        </div>
+        <div class="form-group">
+          <label for="modelInput">Model</label>
+          <input type="text" id="modelInput" placeholder="gpt-4o">
+          <span class="form-hint" id="modelHint">Model name as required by your provider.</span>
+        </div>
+        <div class="form-group">
+          <label for="systemPromptInput">System Prompt</label>
+          <textarea id="systemPromptInput" rows="4">You are an expert HTML/CSS/JS developer. When the user asks for code, respond with ONLY a complete, standalone HTML file. Wrap the code in a single ```html code block. Do not include any other explanation outside the code block unless the user specifically asks for it.</textarea>
+          <span class="form-hint">Instructs the AI how to respond. Customize as needed.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="settingsReset" class="tool-btn">🔄 Reset</button>
+        <button id="settingsSave" class="generate-btn">💾 Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───── DRAG & DROP OVERLAY ───── -->
+  <div class="drop-overlay" id="dropOverlay">📁 Drop files here</div>
+
+  <!-- ───── TOAST ───── -->
+  <div id="toast" class="toast"></div>
+
+  <!-- ───── HIDDEN FILE INPUT (fallback) ───── -->
+  <input type="file" id="fileInputHidden" multiple accept=".html,.htm,.css,.js,.json,.xml,.txt,.md" style="display:none;">
+  <!-- Hidden folder input for browsers without showDirectoryPicker -->
+  <input type="file" id="folderInputHidden" webkitdirectory multiple style="display:none;">
+
+  <!-- ───── SCRIPTS ───── -->
+  <!-- CodeMirror -->
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closetag.min.js"></script>
+  <!-- JSZip for project download -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <!-- App scripts -->
+  <script src="js/templates.js"></script>
+  <script src="js/project.js"></script>
+  <script src="js/ai-providers.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
